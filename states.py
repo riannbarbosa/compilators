@@ -1,25 +1,23 @@
-class State:
-    def __init__(self, initial: bool, id: int):
-        self.initial = initial
-        self.id = id
-        self.isFinal = False
-        self.nextStates = list()
-        
-    def nextState(self, symbol):
-        for state in self.nextStates:
-            if state.label == symbol:
-                self.nextStates.append(state)
-                return state
-        self.nextStates.append(State(symbol))
-        return self.nextStates[-1]
-    
-    def setFinal(self):
-        self.isFinal = True
-        
+import itertools
+
+class STATE:
+    id_iter = itertools.count()
+    def __init__(self, index):
+        self.index = index
+        self.id = next(self.id_iter)
+        self.next_states: list[list[str, str]] = []
+        self.final = False
+
+    def addNextState(self, symbol, nextState):
+        for transition in self.next_states:
+            if transition[0] == symbol:
+                transition.append(nextState)
+                return
+        self.next_states.append([symbol, nextState])
+
+    def setFinal(self, bool):
+        self.final = bool
+
     def printStates(self):
-        for state in self.nextStates:
-            print(state.label, end=" ")
-        print()
-        
-    
-    
+        for transition in self.next_states:
+            print(transition)
