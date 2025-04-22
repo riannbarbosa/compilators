@@ -24,11 +24,19 @@ class AFND:
         parts = line.split("::=")
         left = parts[0].strip()
         right = parts[1].strip()
-        state_name = re.search(r"<(\w+)>", left).group(1)
+        state_name = left.strip()
         state = STATE(state_name)
         self.table.append(state)
-
         productions = [p.strip() for p in right.split("|")]
+        state = next((s for s in self.table if s.index == state_name), None)
+        if state is None:
+            state = STATE(state_name)
+            state.id = self.new_state_counter
+            self.new_state_counter += 1
+            self.table.append(state)
+        if state_name not in self.states:
+            self.states.append(state_name)
+            
         for prod in productions:
             if prod == "ε":
                 state.setFinal(True)
@@ -57,11 +65,10 @@ class AFND:
         if not token:
             return
 
-        if self.table:
-            initial_state = next(s for s in self.table if s.id == 0)
-        else:
-            initial_state = STATE(f"q{self.new_state_counter}")
-            self.new_state_counter += 1
+        initial_state = next((s for s in self.table if s.index == "S" or s.id == 0), None)
+        if initial_state is None:
+            initial_state = STATE("S")
+            initial_state.id = 0
             self.table.append(initial_state)
 
         current_state = initial_state
@@ -112,6 +119,7 @@ class AFND:
 
     def findState(self, index):
         for state in self.table:
-            if state.index == index:
+            clean_state_index = state.index.strip("<>") if isinstance(state.index, str) else state.index
+            if clean_state_index == index:
                 return state
         return False

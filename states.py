@@ -14,7 +14,10 @@ class STATE:
                 transition.append(nextState)
                 return
         self.next_states.append([symbol, nextState])
-
+    def addNextStateArray(self, arr):
+        for i in arr:
+            for j in range(1, len(i)):
+                self.addNextState(i[0], i[j])
     def setFinal(self, bool):
         self.final = bool
 
