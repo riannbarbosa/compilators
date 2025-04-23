@@ -7,7 +7,7 @@ class LexicalAnalyzer:
     def analyze(self, file_path):
        symbol_table = SymbolTable()
        tokens = self.read_tokens(file_path)
-       
+       last_line_number = 1 
        for token, line_number in tokens:
            label = self.process_token(token)
            if not label:
@@ -19,18 +19,23 @@ class LexicalAnalyzer:
                 "identifier": token,
                 "label": label
             })
-       symbol_table.add_symbol({"line": line_number, "identifier": '$', "label": '$'})
+           last_line_number = line_number
+       symbol_table.add_symbol({"line": last_line_number, "identifier": '$', "label": '$'})
        return symbol_table.table
 
             
     def process_token(self, token):
-        current_state = 'S'
-        for char in token:
-            if char not in self.afd.symbols:
-                return False
-            current_state = self.afd.goTo(current_state, char)
-            if not current_state:
-                return False
+        # Checa não terminais (enclosed in < >)
+        if token.startswith('<') and token.endswith('>'):
+            return "NON_TERMINAL"
+        # Checa operadores
+        elif token in ['::=', '|']:
+            return "OPERATOR"
+        # Checa terminais (caracteres únicos ou ε)
+        elif len(token) == 1 or token == 'ε':
+            return "TERMINAL"
+        return "REJECTED"
+
         
     
     def read_tokens(self, file_path):
@@ -40,7 +45,33 @@ class LexicalAnalyzer:
                 for line_number, line in enumerate(file, start=1):  
                     line = line.strip()
                     if line:
-                        tokens = line.split()
+                            # Divide por espaços mas mantém < > juntos
+                        tokens = []
+                        current_token = ""
+                        i = 0
+                        while i < len(line):
+                            if line[i] == '<':
+                                if current_token:
+                                    tokens.append(current_token)
+                                    current_token = ""
+                                while i < len(line) and line[i] != '>':
+                                    current_token += line[i]
+                                    i += 1
+                                if i < len(line):
+                                    current_token += line[i]
+                                    i += 1
+                                tokens.append(current_token)
+                                current_token = ""
+                            elif line[i] == ' ':
+                                if current_token:
+                                    tokens.append(current_token)
+                                    current_token = ""
+                                i += 1
+                            else:
+                                current_token += line[i]
+                                i += 1
+                        if current_token:
+                            tokens.append(current_token)
                         tokens_with_line.extend((token, line_number) for token in tokens)
             return tokens_with_line
         except FileNotFoundError:   
