@@ -6,71 +6,90 @@ class LexicalAnalyzer:
         self.symbol_table = []
         self.errors = []
 
-    def analyze(self, file_path):
+    def tokenize(self, line):
+        delimiters = [':', '+', '=', '<']
+        result = []
+        current_token = ''
+        for char in line:
+            if char.isspace():
+                if current_token:
+                    result.append(current_token)
+                    current_token = ""
+            elif char in delimiters:
+                if current_token:
+                    result.append(current_token)
+                    current_token = ""
+                result.append(char)
+            else:
+                current_token += char
+        if current_token:
+            result.append(current_token)
+        return result
+                        
+                        
+    def classify_token(self, token):
+        if token in ['count']:
+            return 'VARIABLE'
+        elif token in ['while', '=']:
+            return 'KEYWORD'
+        elif token in ['<', '+']:
+            return 'OPERATOR'
+        elif token in ['0', '1', '5']:
+            return 'NUMBER'
+        else:
+            return 'INVALID'
+
+    def transitions(self, file_path):
         with open(file_path, 'r') as file:
             lines = file.readlines()
+        path = []
         current_state = self.afd['initial_state']
-        path = [current_state]
         
         for line_number, line in enumerate(lines, 1):
-            if not line.strip():  # Skip empty lines
+            if not line.strip():  # Pula linhas vazias
                 continue
                 
-            tokens = line.strip().split()
+            tokens = self.tokenize(line)
             for token in tokens:
                 if current_state in self.afd['transitions'] and token in self.afd['transitions'][current_state]:
-                    current_state = self.afd['transitions'][current_state][token]
-                    path.append(current_state)
-                    
-                    if token == 'count':
-                        self.symbol_table.append({
-                            'line': line_number,
-                            'identifier': token,
-                            'label': 'VARIABLE'
-                        })
-                    elif token in ['while', '=']:
-                        self.symbol_table.append({
-                            'line': line_number,
-                            'identifier': token,
-                            'label': 'KEYWORD'
-                        })
-                    elif token in ['<', '+']:
-                        self.symbol_table.append({
-                            'line': line_number,
-                            'identifier': token,
-                            'label': 'OPERATOR'
-                        })
-                    elif token in ['0', '1', '5']:
-                        self.symbol_table.append({
-                            'line': line_number,
-                            'identifier': token,
-                            'label': 'NUMBER'
-                        })
-                    elif token == ':':
-                        self.symbol_table.append({
-                            'line': line_number,
-                            'identifier': token,
-                            'label': 'SYMBOL'
-                        })
+                    next_state = self.afd['transitions'][current_state][token]
+                    path.append(next_state)
+                    label = self.classify_token(token)
+                    self.symbol_table.append({
+                    'line': line_number,
+                    'identifier': token,
+                    'label': label
+                     })
+                    current_state = next_state
                 else:
+                # Transição inválida
                     self.errors.append({
                         'line': line_number,
                         'token': token,
-                        'message': 'Token invalido "{}" no estado {}'.format(token, current_state)
+                        'message': f'No transition for token "{token}" from state {current_state}'
                     })
-                    return False, path, self.errors
-        
+                    label = 'INVALID'
+                    
+                    self.symbol_table.append({
+                        'line': line_number,
+                        'identifier': token,
+                        'label': label
+                    })
+
+            # Verificar se terminou em um estado final
         if current_state not in self.afd['final_states']:
             self.errors.append({
                 'line': line_number,
                 'token': '',
-                'message': 'Codigo terminou em estado nao final: {}'.format(current_state)
+                'message': f'Process ended in non-final state {current_state}'
             })
-            return False, path, self.errors
-            
-        return True, path, self.errors
+        
+        return current_state in self.afd['final_states'], path, self.errors
+
+    # def define_
 
     def print_symbol_table(self):
+        print(self.errors)
         print("\nSymbol Table:")
         print("Line\tIdentifier\tLabel")
         print("-" * 40)
@@ -80,19 +99,3 @@ class LexicalAnalyzer:
                 symbol['identifier'],
                 symbol['label']
             ))
-
-    def print_errors(self):
-        if self.errors:
-            print("\nErrors Found:")
-            print("Line\tToken\t\tMessage")
-            print("-" * 60)
-            for error in self.errors:
-                print("{}\t{}\t\t{}".format(
-                    error['line'],
-                    error['token'],
-                    error['message']
-                ))
-        else:
-            print("\nNo errors found.")
-            
-            
