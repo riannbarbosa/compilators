@@ -1,7 +1,7 @@
 from afd import *
 from tabulate import tabulate
 class LexicalAnalyzer:
-    def __init__(self, afd):
+    def __init__(self, afd):    
         self.afd = afd
         self.symbol_table = []
         self.errors = []
@@ -115,9 +115,6 @@ class LexicalAnalyzer:
     def print_symbol_table(self):
         if not self.errors:
             print("Nenhum erro encontrado.")
-            return
-        
-        print("Erro encontrado:")
         for error in self.errors:
             print(f"Linha {error['line']}: Erro com o token'{error['token']}' - {error['message']}")
         print("\nTabela:")

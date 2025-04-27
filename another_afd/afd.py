@@ -1,5 +1,5 @@
 afd = {
-    'alphabet': ['count', '=', '0', 'while', ':', '<', '5', '+', '1'],
+    'alphabet': ['c', 'o', 'u', 'n', 't', '=', '0', 'w', 'h', 'i', 'l', 'e', '<', '5', ':', '+', '1'],
     'transitions': {
         'q0': {'c': 'q1'},
         'q1': {'o': 'q2'},
@@ -31,5 +31,5 @@ afd = {
         'q27': {'1': 'q28'},  # count += 1
     },
     'initial_state': 'q0',
-    'final_states': ['q28']
+    'final_states': ['q5', 'q7', 'q12', 'q17', 'q19', 'q20', 'q25', 'q28']
 }
