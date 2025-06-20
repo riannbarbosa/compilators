@@ -19,7 +19,7 @@ class SintaticalAnalyzer:
     def load_parse(self, parsing_table_file):
         parsing_table = {}
         with open(parsing_table_file, newline='') as csvfile:
-            reader = csv.reader(csvfile, delimiter=';')
+            reader = csv.reader(csvfile)
             headers = next(reader)
             for row in reader:
                 state = int(row[0])
