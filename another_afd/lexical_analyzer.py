@@ -1,5 +1,7 @@
 from afd import *
 from tabulate import tabulate
+import re
+
 class LexicalAnalyzer:
     def __init__(self, afd):    
         self.afd = afd
@@ -7,7 +9,6 @@ class LexicalAnalyzer:
         self.errors = []
 
     def tokenize(self, line):
-        delimiters = [':', '+', '=', '<']
         result = []
         current_token = ''
         for char in line:
@@ -15,7 +16,8 @@ class LexicalAnalyzer:
                 if current_token:
                     result.append(current_token)
                     current_token = ""
-            elif char in delimiters:
+                    
+            elif char in '{}=;()':
                 if current_token:
                     result.append(current_token)
                     current_token = ""
@@ -28,16 +30,13 @@ class LexicalAnalyzer:
                         
                         
     def classify_token(self, token):
-        if token in ['count']:
-            return 'VARIABLE'
-        elif token in ['while', '=', ':']:
-            return 'KEYWORD'
-        elif token in ['<', '+']:
-            return 'OPERATOR'
-        elif token in ['0', '1', '5']:
-            return 'NUMBER'
-        else:
-            return 'INVALID'
+        if token in ('let', 'if', 'true', 'false'):
+            return token 
+        if token in ('{','}','=',';'):
+            return token
+        if re.match(r'^[A-Za-z][A-Za-z0-9]*$', token):
+            return 'var'  
+        return 'INVALID'
 
     def transitions(self, file_path):
         with open(file_path, 'r') as file:
@@ -78,8 +77,7 @@ class LexicalAnalyzer:
                 'token': '',
                 'message': f'Processo terminal sem um estado final {current_state}'
             })
-                
-        return True, path, self.errors    
+        return True, path, self.errors, self.symbol_table 
     
     def print_afd(self):
         # Print the alphabet
@@ -97,7 +95,7 @@ class LexicalAnalyzer:
                 for char in symbol: 
                     if state in self.afd['transitions'] and char in self.afd['transitions'][state]:
                         next_state = self.afd['transitions'][state][char]
-                        break  
+                        break
                 row.append(next_state)
             table_data.append(row)
         
