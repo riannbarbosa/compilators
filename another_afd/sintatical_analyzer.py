@@ -67,18 +67,58 @@ class SintaticalAnalyzer:
         print(f"Syntax Error: {message}")
 
     def reduce(self, production):
-        print('caiu aqi')
-        if production == 0:
-            # E' -> S
-            self.state_stack.pop() # Pop S
-            self.state_stack.append(self.goto(self.state_stack[-1], 'E\''))
-        
-        elif production == 1:
-            # S -> epsilon
-            self.state_stack.append(self.goto(self.state_stack[-1], 'S'))
-            pass
+        print(f"Reducing production {production} with current state stack: {self.state_stack}")
+        if production == 1:
+            # S -> ε
+            # Não remove nada da pilha (ε = vazio)
+            goto_state = self.goto(self.state_stack[-1], "S")
+            self.state_stack.append(goto_state)
+        elif production == 2:
+            # S -> let var = E
+            for _ in range(4):  # Remove E, =, var, let
+                self.state_stack.pop()
+            goto_state = self.goto(self.state_stack[-1], "S")
+            self.state_stack.append(goto_state)
+        elif production == 3:
+            # E -> TRUE
+            self.state_stack.pop()  # Remove TRUE
+            goto_state = self.goto(self.state_stack[-1], "E")
+            self.state_stack.append(goto_state)
+        elif production == 4:
+            # E -> FALSE
+            self.state_stack.pop()  # Remove FALSE
+            goto_state = self.goto(self.state_stack[-1], "E")
+            self.state_stack.append(goto_state)
+        elif production == 5:
+            # E -> var
+            self.state_stack.pop()  # Remove var
+            goto_state = self.goto(self.state_stack[-1], "E")
+            self.state_stack.append(goto_state)
+        elif production == 6:
+            # E -> { C }
+            for _ in range(3):  # Remove }, C, {
+                self.state_stack.pop()
+            goto_state = self.goto(self.state_stack[-1], "E")
+            self.state_stack.append(goto_state)
+        elif production == 7:
+            # C -> S
+            self.state_stack.pop()  # Remove S
+            goto_state = self.goto(self.state_stack[-1], "C")
+            self.state_stack.append(goto_state)
+        else:
+            self.error(f"Produção desconhecida: {production}")
+            return False
 
         return True
+    
+    def goto(self, current_state, non_terminal):
+        action = self.parsing_table.get(current_state, {}).get(non_terminal, None)
+        print(f"action: {action} for state {current_state} and non-terminal '{non_terminal}'")
+        if action and action.isdigit():
+            return int(action)
+        else:
+            self.error(f"GOTO não encontrado para estado {current_state} e não-terminal '{non_terminal}'")
+            return None
 
 if __name__ == '__main__':
     parsing_table_file = 'parsing_table.csv'
