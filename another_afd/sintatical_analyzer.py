@@ -68,42 +68,60 @@ class SintaticalAnalyzer:
 
     def reduce(self, production):
         print(f"Reducing production {production} with current state stack: {self.state_stack}")
+        # S' -> PROGRAMA
         if production == 1:
-            # S -> ε
-            # Não remove nada da pilha (ε = vazio)
-            goto_state = self.goto(self.state_stack[-1], "S")
+            # S' -> PROGRAMA
+            self.state_stack.pop()  # Remove PROGRAMA
+            goto_state = self.goto(self.state_stack[-1], "S'")
             self.state_stack.append(goto_state)
+        # PROGRAMA -> STATEMENT PROGRAMA
         elif production == 2:
-            # S -> let var = E
-            for _ in range(4):  # Remove E, =, var, let
+            for _ in range(2):  # Remove PROGRAMA, STATEMENT
                 self.state_stack.pop()
-            goto_state = self.goto(self.state_stack[-1], "S")
+            goto_state = self.goto(self.state_stack[-1], "PROGRAMA")
             self.state_stack.append(goto_state)
+        # PROGRAMA -> ε
         elif production == 3:
-            # E -> TRUE
-            self.state_stack.pop()  # Remove TRUE
-            goto_state = self.goto(self.state_stack[-1], "E")
+            # Não remove nada da pilha
+            goto_state = self.goto(self.state_stack[-1], "PROGRAMA")
             self.state_stack.append(goto_state)
+        # STATEMENT -> LETSTATEMENT
         elif production == 4:
-            # E -> FALSE
-            self.state_stack.pop()  # Remove FALSE
-            goto_state = self.goto(self.state_stack[-1], "E")
+            self.state_stack.pop()  # Remove LETSTATEMENT
+            goto_state = self.goto(self.state_stack[-1], "STATEMENT")
             self.state_stack.append(goto_state)
+        # STATEMENT -> IFSTATEMENT
         elif production == 5:
-            # E -> var
-            self.state_stack.pop()  # Remove var
-            goto_state = self.goto(self.state_stack[-1], "E")
+            self.state_stack.pop()  # Remove IFSTATEMENT
+            goto_state = self.goto(self.state_stack[-1], "STATEMENT")
             self.state_stack.append(goto_state)
+        # LETSTATEMENT -> let IDENT = IDENT
         elif production == 6:
-            # E -> { C }
-            for _ in range(3):  # Remove }, C, {
+            for _ in range(4):  # Remove IDENT, =, IDENT, let
                 self.state_stack.pop()
-            goto_state = self.goto(self.state_stack[-1], "E")
+            goto_state = self.goto(self.state_stack[-1], "LETSTATEMENT")
             self.state_stack.append(goto_state)
+        # IFSTATEMENT -> if EXP_BOOL BLOCO_COND
         elif production == 7:
-            # C -> S
-            self.state_stack.pop()  # Remove S
-            goto_state = self.goto(self.state_stack[-1], "C")
+            for _ in range(3):  # Remove BLOCO_COND, EXP_BOOL, if
+                self.state_stack.pop()
+            goto_state = self.goto(self.state_stack[-1], "IFSTATEMENT")
+            self.state_stack.append(goto_state)
+        # EXP_BOOL -> true
+        elif production == 8:
+            self.state_stack.pop()  # Remove true
+            goto_state = self.goto(self.state_stack[-1], "EXP_BOOL")
+            self.state_stack.append(goto_state)
+        # EXP_BOOL -> false
+        elif production == 9:
+            self.state_stack.pop()  # Remove false
+            goto_state = self.goto(self.state_stack[-1], "EXP_BOOL")
+            self.state_stack.append(goto_state)
+        # BLOCO_COND -> { PROGRAMA }
+        elif production == 10:
+            for _ in range(3):  # Remove }, PROGRAMA, {
+                self.state_stack.pop()
+            goto_state = self.goto(self.state_stack[-1], "BLOCO_COND")
             self.state_stack.append(goto_state)
         else:
             self.error(f"Produção desconhecida: {production}")

@@ -35,7 +35,7 @@ class LexicalAnalyzer:
         if token in ('{','}','=',';'):
             return token
         if re.match(r'^[A-Za-z][A-Za-z0-9]*$', token):
-            return 'var'  
+            return 'IDENT'
         return 'INVALID'
 
     def transitions(self, file_path):
