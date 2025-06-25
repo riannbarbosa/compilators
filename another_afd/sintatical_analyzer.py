@@ -19,15 +19,15 @@ class SintaticalAnalyzer:
         self.current_variable_stack = []
 
         self.reducoes = {
-            0: 1,  # PROGRAMA'  → SEQUENCIAL
-            1: 1,  # SEQUENCIAL   → COMANDO
-            2: 2,  # SEQUENCIAL   → COMANDO SEQUENCIAL
-            3: 2,  # COMANDO → let IDENT = IDENT
-            4: 5,  # COMANDO → true
-            5: 1,  # COMANDO → false
-            6: 1,  # COMANDO → if COMANDO CORPO_IF
-            7: 1,  # COMANDO → { COMANDO }
-            8: 5,  # CORPO_IF → COMANDO
+            0: 1,  # E' -> S
+            1: 1,  # S -> épsilon
+            2: 2,  # S -> E S
+            3: 2,  # S -> C S
+            4: 5,  # E -> let var = E ;
+            5: 1,  # E -> true
+            6: 1,  # E -> false
+            7: 1,  # E -> var
+            8: 5,  # C -> if E { E }
         }
         self.producoes_goto = {
             0: "S'",
@@ -157,7 +157,7 @@ if __name__ == '__main__':
     # Provide actual productions dict matching parsing_table
     from lexical_analyzer import LexicalAnalyzer
     lexer = LexicalAnalyzer(afd)
-    # Get tokens from lexical analyzer;;
+    # Get tokens from lexical analyzer;
     tokens = lexer.transitions('inputs/input.in')[3]
     parser = SintaticalAnalyzer(parsing_table_file)
     result = parser.parse(tokens)
