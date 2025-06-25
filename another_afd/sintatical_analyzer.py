@@ -49,7 +49,7 @@ class SintaticalAnalyzer:
             for row in reader:
                 state = int(row[0])
                 parsing_table[state] = {}
-                for index, action in enumerate(row[0:]):
+                for index, action in enumerate(row[1:], 1):
                     if action:
                         parsing_table[state][headers[index]] = action
 
@@ -84,6 +84,7 @@ class SintaticalAnalyzer:
                 consumed_token = self.input_stack.pop(0)
                 self.symbol_stack.append(token)
                 self.state_stack.append(next_state)
+                print(f"Shifted to state {next_state}")
             # FAZ REDUCE
             elif action.startswith('r'):
                 print(tabulate(log_tabela, headers=["Pilha", "Fita", "Ação"], tablefmt="grid"))
