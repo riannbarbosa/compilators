@@ -6,7 +6,9 @@ from afd import afd
 import re
 import os
 
+
 class SintaticalAnalyzer:
+
     def __init__(self, parsing_table_file):
         self.parsing_table = self.load_parse(parsing_table_file)
         self.state_stack = [0]
@@ -15,6 +17,29 @@ class SintaticalAnalyzer:
         self.symbol_table = {}
         self.current_expression_value = None
         self.current_variable_stack = []
+
+        self.reducoes = {
+            0: 1,  # PROGRAMA'  → SEQUENCIAL
+            1: 1,  # SEQUENCIAL   → COMANDO
+            2: 2,  # SEQUENCIAL   → COMANDO SEQUENCIAL
+            3: 2,  # COMANDO → let IDENT = IDENT
+            4: 5,  # COMANDO → true
+            5: 1,  # COMANDO → false
+            6: 1,  # COMANDO → if COMANDO CORPO_IF
+            7: 1,  # COMANDO → { COMANDO }
+            8: 5,  # CORPO_IF → COMANDO
+        }
+        self.producoes_goto = {
+            0: "S'",
+            1: "S",
+            2: "S",
+            3: "S",
+            4: "E",
+            5: "E",
+            6: "E",
+            7: "E",
+            8: "C",
+        }
 
     def load_parse(self, parsing_table_file):
         parsing_table = {}
@@ -27,116 +52,104 @@ class SintaticalAnalyzer:
                 for index, action in enumerate(row[0:]):
                     if action:
                         parsing_table[state][headers[index]] = action
-                        
+
         return parsing_table
-    
+
     def parse(self, tokens):
-        self.input_stack = tokens
-        while self.input_stack:
+        log_tabela = []
+        self.input_stack = tokens + [{'label': '$'}]
+        self.log_tabela = log_tabela
+        while True:
             estado_atual = self.state_stack[-1]
             token_data = self.input_stack[0]
             token = token_data['label']
             if token == 'INVALID':
-                self.error(f"Syntax error at line {token_data['line']}: {token}")
+                self.error(
+                    f"Syntax error at line {token_data['line']}: {token}")
                 return
-            
             action = self.parsing_table.get(estado_atual, {}).get(token, None)
+            
+            log_tabela.append([
+                self.pilha_formatada(),
+                ' '.join([t['label'] for t in self.input_stack]), action
+            ])
+
             if action is None:
-                self.error(f"Unexpected token '{token}' at line {token_data.get('line')}")
+                print(tabulate(log_tabela, headers=["Pilha", "Fita", "Ação"], tablefmt="grid"))
+                self.error(f"Erro: Token inesperado '{token}' na {token_data.get('line')} linha no estado {estado_atual}")
                 return
             # FAZ SHIFT
-            print(action)
             if action.startswith('s'):
                 next_state = int(action[1:])
-                self.input_stack.append(token_data)
-                self.input_stack.pop(0)
+                consumed_token = self.input_stack.pop(0)
+                self.symbol_stack.append(token)
                 self.state_stack.append(next_state)
             # FAZ REDUCE
             elif action.startswith('r'):
+                print(tabulate(log_tabela, headers=["Pilha", "Fita", "Ação"], tablefmt="grid"))
                 production_number = int(action[1:])
                 if not self.reduce(production_number):
                     return
             elif action == 'acc' or action == '$' and action == 'acc':
-                print("Input accepted.")
+                print(tabulate(log_tabela, headers=["Pilha", "Fita", "Ação"], tablefmt="grid"))
+                print("Input aceito.\n")
                 return
             else:
-                self.error(f"Invalid action '{action}' at state {estado_atual}")
+                print(
+                    tabulate(log_tabela, headers=["Pilha", "Fita", "Ação"], tablefmt="grid"))
+                self.error(
+                    f"Ação inválida '{action}' no estado {estado_atual}")
                 return
 
     def error(self, message):
         print(f"Syntax Error: {message}")
 
     def reduce(self, production):
-        print(f"Reducing production {production} with current state stack: {self.state_stack}")
-        # S' -> PROGRAMA
-        if production == 1:
-            # S' -> PROGRAMA
-            self.state_stack.pop()  # Remove PROGRAMA
-            goto_state = self.goto(self.state_stack[-1], "S'")
-            self.state_stack.append(goto_state)
-        # PROGRAMA -> STATEMENT PROGRAMA
-        elif production == 2:
-            for _ in range(2):  # Remove PROGRAMA, STATEMENT
-                self.state_stack.pop()
-            goto_state = self.goto(self.state_stack[-1], "PROGRAMA")
-            self.state_stack.append(goto_state)
-        # PROGRAMA -> ε
-        elif production == 3:
-            # Não remove nada da pilha
-            goto_state = self.goto(self.state_stack[-1], "PROGRAMA")
-            self.state_stack.append(goto_state)
-        # STATEMENT -> LETSTATEMENT
-        elif production == 4:
-            self.state_stack.pop()  # Remove LETSTATEMENT
-            goto_state = self.goto(self.state_stack[-1], "STATEMENT")
-            self.state_stack.append(goto_state)
-        # STATEMENT -> IFSTATEMENT
-        elif production == 5:
-            self.state_stack.pop()  # Remove IFSTATEMENT
-            goto_state = self.goto(self.state_stack[-1], "STATEMENT")
-            self.state_stack.append(goto_state)
-        # LETSTATEMENT -> let IDENT = IDENT
-        elif production == 6:
-            for _ in range(4):  # Remove IDENT, =, IDENT, let
-                self.state_stack.pop()
-            goto_state = self.goto(self.state_stack[-1], "LETSTATEMENT")
-            self.state_stack.append(goto_state)
-        # IFSTATEMENT -> if EXP_BOOL BLOCO_COND
-        elif production == 7:
-            for _ in range(3):  # Remove BLOCO_COND, EXP_BOOL, if
-                self.state_stack.pop()
-            goto_state = self.goto(self.state_stack[-1], "IFSTATEMENT")
-            self.state_stack.append(goto_state)
-        # EXP_BOOL -> true
-        elif production == 8:
-            self.state_stack.pop()  # Remove true
-            goto_state = self.goto(self.state_stack[-1], "EXP_BOOL")
-            self.state_stack.append(goto_state)
-        # EXP_BOOL -> false
-        elif production == 9:
-            self.state_stack.pop()  # Remove false
-            goto_state = self.goto(self.state_stack[-1], "EXP_BOOL")
-            self.state_stack.append(goto_state)
-        # BLOCO_COND -> { PROGRAMA }
-        elif production == 10:
-            for _ in range(3):  # Remove }, PROGRAMA, {
-                self.state_stack.pop()
-            goto_state = self.goto(self.state_stack[-1], "BLOCO_COND")
-            self.state_stack.append(goto_state)
-        else:
-            self.error(f"Produção desconhecida: {production}")
+        producao = self.reducoes[production]
+        producao_goto = self.producoes_goto[production]
+        if producao is None or producao_goto is None:
+            self.error(f"Sem informação semantica para produção {production}")
+            return False
+        for _ in range(producao):
+            self.state_stack.pop()
+            self.symbol_stack.pop()
+
+        goto_state = self.goto(self.state_stack[-1], producao_goto)
+        
+        self.state_stack.append(goto_state)
+        self.symbol_stack.append(producao_goto)
+        
+
+        if goto_state is None:
+            print(f"Error: Sem estado goto para {producao_goto} do estado {self.state_stack[-1]}")
             return False
 
+        # print(f"Pós redução - Estado da pilha: {self.state_stack}")
+        # print(f"Symbol stack: {self.symbol_stack}")
         return True
-    
+
     def goto(self, current_state, non_terminal):
-        action = self.parsing_table.get(current_state, {}).get(non_terminal, None)
-        print(f"action: {action} for state {current_state} and non-terminal '{non_terminal}'")
+        action = self.parsing_table.get(current_state, 
+                                        {}).get(non_terminal, None)
+        print(f"GOTO: estado {current_state}, não-terminal '{non_terminal}' -> ação: {action}")
         if action and action.isdigit():
             return int(action)
         else:
             self.error(f"GOTO não encontrado para estado {current_state} e não-terminal '{non_terminal}'")
             return None
+
+    def pilha_formatada(self):
+        pares = []
+        for estado, simbolo in zip(self.state_stack[:-1], self.symbol_stack):
+            if isinstance(simbolo, dict):
+                label = simbolo.get('label', str(simbolo))
+            else:
+                label = str(simbolo)
+            pares.append(f"{estado} {label}")
+        if len(self.state_stack) > len(self.symbol_stack):
+            pares.append(str(self.state_stack[-1]))
+        return ' '.join(pares)
+
 
 if __name__ == '__main__':
     parsing_table_file = 'parsing_table.csv'
@@ -144,8 +157,6 @@ if __name__ == '__main__':
     from lexical_analyzer import LexicalAnalyzer
     lexer = LexicalAnalyzer(afd)
     # Get tokens from lexical analyzer;;
-    tokens = lexer.transitions('inputs/testinput.in')[3]
+    tokens = lexer.transitions('inputs/input.in')[3]
     parser = SintaticalAnalyzer(parsing_table_file)
     result = parser.parse(tokens)
-    print('Parsing result:', result)
-

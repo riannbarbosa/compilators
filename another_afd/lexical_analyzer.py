@@ -30,9 +30,10 @@ class LexicalAnalyzer:
                         
                         
     def classify_token(self, token):
-        if token in ('let', 'if', 'true', 'false'):
-            return token 
-        if token in ('{','}','=',';'):
+        keywords = {'let', 'if', 'true', 'false'}
+        if token.lower() in keywords:
+            return token.lower()
+        if token in ('{','}','=',';','(',')'):
             return token
         if re.match(r'^[A-Za-z][A-Za-z0-9]*$', token):
             return 'IDENT'
