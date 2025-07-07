@@ -19,26 +19,24 @@ class SintaticalAnalyzer:
         self.current_variable_stack = []
 
         self.reducoes = {
-            0: 1,  # E' -> S
-            1: 1,  # S -> épsilon
-            2: 2,  # S -> E S
-            3: 2,  # S -> C S
-            4: 5,  # E -> let var = E ;
-            5: 1,  # E -> true
-            6: 1,  # E -> false
-            7: 1,  # E -> var
-            8: 5,  # C -> if E { E }
+            0: 1,  # PROGRAM' -> SEQUENCE
+            1: 2,  # SEQUENCE -> SEQUENCE STATEMENT
+            2: 1,  # SEQUENCE -> STATEMENT  
+            3: 5,  # STATEMENT -> let IDENT = STATEMENT ;
+            4: 1,  # STATEMENT -> true
+            5: 1,  # STATEMENT -> false
+            6: 1,  # STATEMENT -> IDENT
+            7: 5,  # STATEMENT -> if STATEMENT { STATEMENT }
         }
         self.producoes_goto = {
-            0: "S'",
-            1: "S",
-            2: "S",
-            3: "S",
-            4: "E",
-            5: "E",
-            6: "E",
-            7: "E",
-            8: "C",
+            0: "PROGRAM'",
+            1: "SEQUENCE",
+            2: "SEQUENCE",
+            3: "STATEMENT",
+            4: "STATEMENT",
+            5: "STATEMENT",
+            6: "STATEMENT",
+            7: "STATEMENT",
         }
 
     def load_parse(self, parsing_table_file):
@@ -155,37 +153,41 @@ class SintaticalAnalyzer:
             pares.append(str(self.state_stack[-1]))
         return ' '.join(pares)
     
-    def update_symbol_table(self, production, reduced_tokens):
-        # Produção 4: E -> let var = E ;
-        if production == 4:
-            # Espera-se: [{'label': 'let'}, {'label': 'IDENT'}, {'label': '='}, {'label': valor}, {'label': ';'}]
-            current_variable = self.current_variable_stack.pop()
+   # def update_symbol_table(self, production, reduced_tokens):
+   #     # Produção 4: E -> let var = E ;
+   #    print(production)
+   #     if production == 4:
+   #         # Espera-se: [{'label': 'let'}, {'label': 'IDENT'}, {'label': '='}, {'label': valor}, {'label': ';'}]
+   #         current_variable = self.current_variable_stack.pop()
             # Busca o valor atribuído (o último token relevante)
-            var_value = None
-            for t in reduced_tokens:
-                if t['label'] not in ['let', '=', ';']:
-                    var_value = t['label']
-            if current_variable in self.symbol_table.keys():
-                self.error(f"Tried to Reassign variable '{current_variable}'")
-                return False
-            else:
-                self.symbol_table[current_variable] = {
-                    "value": var_value,
-                    "type": "bool" if var_value in ['true', 'false'] else "unknown"
-                }
-
-        # Produção 7: E -> var (uso de variável)
-        elif production == 7:
-            current_variable = self.current_variable_stack.pop()
-            if current_variable in self.symbol_table.keys():
-                self.current_expression_value = self.symbol_table[current_variable]
-            else:
-                self.error(f"Tried to Invoke No Declared Variable '{current_variable}'")
-                return False
-
-        else:
-            pass
-
+   ##         print(current_variable)
+     #       var_value = None
+   #         for t in reduced_tokens:
+    #            if t['label'] not in ['let', '=', ';']:
+    #               var_value = t['label']
+    #                print(var_value, 'kkkkkkkkkkkkkkkk')
+     #       if current_variable in self.symbol_table.keys():
+    #            self.error(f"Tried to Reassign variable '{current_variable}'")
+    #            return False
+     #       else:
+   #             self.symbol_table[current_variable] = {
+    #                "value": var_value,
+    #                "type": "bool" if var_value in ['true', 'false'] else "unknown"
+   #             }
+#
+ #       # Produção 7: E -> var (uso de variável)
+  #      elif production == 7:
+   #         current_variable = self.current_variable_stack.pop()
+    #        print(current_variable, 'AAAAAAAAAAAAAA')
+     #       if current_variable in self.symbol_table.keys():
+     #           self.current_expression_value = self.symbol_table[current_variable]
+      #      else:
+       #         self.error(f"Tried to Invoke No Declared Variable '{current_variable}'")
+        #        return False
+#
+ #       else:
+  #          print('PASSED')
+   #         pass
 
 if __name__ == '__main__':
     parsing_table_file = 'parsing_table.csv'
