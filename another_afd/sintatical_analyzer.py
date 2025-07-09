@@ -6,6 +6,21 @@ from afd import afd
 import re
 import os
 
+class TreeNode:
+    def __init__(self, label, children=None):
+        self.label = label
+        self.children = children or []
+
+    def print_tree(self, prefix="", is_last=True):
+        connector = "└── " if is_last else "├── "
+        print(prefix + connector + str(self.label))
+        prefix += "    " if is_last else "│   "
+        for i, child in enumerate(self.children):
+            is_last_child = (i == len(self.children) - 1)
+            if isinstance(child, TreeNode):
+                child.print_tree(prefix, is_last_child)
+            else:
+                print(prefix + ("└── " if is_last_child else "├── ") + str(child))
 
 class SintaticalAnalyzer:
 
@@ -17,6 +32,7 @@ class SintaticalAnalyzer:
         self.symbol_table = {}
         self.current_expression_value = None
         self.current_variable_stack = []
+        self.derivation_stack = []
 
         self.reducoes = {
             0: 1,  # PROGRAM' -> SEQUENCE
@@ -57,6 +73,7 @@ class SintaticalAnalyzer:
         log_tabela = []
         self.input_stack = tokens + [{'label': '$'}]
         self.log_tabela = log_tabela
+        self.derivation_stack = [TreeNode(t['label']) for t in self.input_stack if t['label'] != '$']
         while True:
             estado_atual = self.state_stack[-1]
             token_data = self.input_stack[0]
@@ -94,6 +111,9 @@ class SintaticalAnalyzer:
             elif action == 'acc' or action == '$' and action == 'acc':
                 print(tabulate(log_tabela, headers=["Pilha", "Fita", "Ação"], tablefmt="grid"))
                 print("Input aceito.\n")
+                print("Árvore de derivação:")
+                if self.derivation_stack:
+                    self.derivation_stack[-1].print_tree()
                 return
             else:
                 print(tabulate(log_tabela, headers=["Pilha", "Fita", "Ação"], tablefmt="grid"))
@@ -113,12 +133,27 @@ class SintaticalAnalyzer:
             self.error(f"Sem informação semantica para produção {production}", self.input_stack.get('line'))
             return False
 
+        children = []
         for _ in range(producao):
             self.state_stack.pop()
             self.symbol_stack.pop()
+            children.insert(0, self.derivation_stack.pop())
+
+        prod_map = {
+            0: "PROGRAM'",
+            1: "SEQUENCE",
+            2: "SEQUENCE",
+            3: "STATEMENT",
+            4: "STATEMENT",
+            5: "STATEMENT",
+            6: "STATEMENT",
+            7: "STATEMENT",
+        }
+        node_label = prod_map[production]
+        node = TreeNode(node_label, children)
+        self.derivation_stack.append(node)
 
         goto_state = self.goto(self.state_stack[-1], producao_goto)
-        
         self.state_stack.append(goto_state)
         self.symbol_stack.append(producao_goto)
         
